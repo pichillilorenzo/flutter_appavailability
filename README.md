@@ -2,7 +2,7 @@
 
 [![Pub](https://img.shields.io/pub/v/flutter_appavailability.svg)](https://pub.dartlang.org/packages/flutter_appavailability)
 
-A Flutter plugin that allows you to check if an app is installed/enabled, launch an app and get list of the installed apps.
+A Flutter plugin that allows you to check if an app is installed/enabled, launch an app and get the list of installed apps.
 
 This plugin was inspired by the plugin [AppAvailability for Cordova](https://github.com/ohh2ahh/AppAvailability).
 
