@@ -6,12 +6,21 @@ import 'package:flutter/services.dart';
 /// Main class of the plugin.
 class AppAvailability {
   static const MethodChannel _channel =
-      const MethodChannel('com.pichillilorenzo/dart');
+      const MethodChannel('com.pichillilorenzo/flutter_appavailability');
 
   /// Check if an app is available with the given [uri] scheme.
   ///
   /// Returns a [Map<String, String>] containing info about the App or throws a [PlatformException]
-  /// if the App is not found.
+  /// if the app isn't found.
+  ///
+  /// The returned [Map] has a form like this:
+  /// ```dart
+  /// {
+  ///   "app_name": "",
+  ///   "package_name": "",
+  ///   "versionCode": "",
+  ///   "version_name": ""
+  /// }
   static Future<Map<String, String>> checkAvailability(String uri) async {
     Map<String, dynamic> args = <String, dynamic>{};
     args.putIfAbsent('uri', () => uri);
@@ -41,7 +50,10 @@ class AppAvailability {
     return null;
   }
 
-  /// Get the list of all installed apps. Only for [Android].
+  /// Only for **Android**.
+  ///
+  /// Get the list of all installed apps, where
+  /// each app has a form like [checkAvailability()].
   static Future<List<Map<String, String>>> getInstalledApps() async {
     List<dynamic> apps = await _channel.invokeMethod("getInstalledApps");
     if (apps != null && apps is List) {
@@ -62,14 +74,20 @@ class AppAvailability {
     return new List(0);
   }
 
-  /// Check if the app is enabled or not. Only for [Android].
+  /// Only for **Android**.
+  ///
+  /// Check if the app is enabled or not with the given [uri] scheme.
+  ///
+  /// If the app isn't found, then a [PlatformException] is thrown.
   static Future<bool> isAppEnabled(String uri) async {
     Map<String, dynamic> args = <String, dynamic>{};
     args.putIfAbsent('uri', () => uri);
     return await _channel.invokeMethod("isAppEnabled", args);
   }
 
-  /// Launch an app with the given [uri] scheme.
+  /// Launch an app with the given [uri] scheme if it exists.
+  ///
+  /// If the app app isn't found, then a [PlatformException] is thrown.
   static Future<void> launchApp(String uri) async {
     Map<String, dynamic> args = <String, dynamic>{};
     args.putIfAbsent('uri', () => uri);

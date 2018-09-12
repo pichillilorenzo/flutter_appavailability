@@ -1,6 +1,8 @@
 # Flutter AppAvailability Plugin
 Flutter plugin that allows you to check if an app is installed/enabled, launch an app and get list of the installed apps.
 
+This plugin was inspired by the plugin [AppAvailability for Cordova](https://github.com/ohh2ahh/AppAvailability).
+
 ## Getting Started
 For help getting started with Flutter, view our online
 [documentation](https://flutter.io/).
@@ -15,6 +17,8 @@ First, add `flutter_appavailability` as a [dependency in your pubspec.yaml file]
 - `getInstalledApps()` (only for **Android**)
 - `isAppEnabled(String uri)` (only for **Android**)
 - `launchApp(String uri)`
+
+See the [docs](https://pub.dartlang.org/documentation/flutter_appavailability/latest/).
 
 ## Example
 Here is a small example flutter app displaying a list of installed apps that you can launch.
@@ -124,3 +128,9 @@ class _MyAppState extends State<MyApp> {
 }
 
 ```
+
+Android:
+![screenshot_1536780581](https://user-images.githubusercontent.com/5956938/45448682-48c49e80-b6d3-11e8-8e56-5972b017e233.png)
+
+iOS:
+![simulator screen shot - iphone x - 2018-09-12 at 21 27 05](https://user-images.githubusercontent.com/5956938/45448686-4a8e6200-b6d3-11e8-841c-be5b609b8c9b.png)
