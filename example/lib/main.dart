@@ -44,10 +44,10 @@ class _MyAppState extends State<MyApp> {
       _installedApps = await AppAvailability.getInstalledApps();
 
       print(await AppAvailability.checkAvailability("com.android.chrome"));
-      // Return: Map<String, String>{app_name: Chrome, package_name: com.android.chrome, versionCode: null, version_name: 55.0.2883.91}
+      // Returns: Map<String, String>{app_name: Chrome, package_name: com.android.chrome, versionCode: null, version_name: 55.0.2883.91}
 
       print(await AppAvailability.isAppEnabled("com.android.chrome"));
-      // Return: true
+      // Returns: true
 
     }
     else if (Platform.isIOS) {
@@ -55,7 +55,7 @@ class _MyAppState extends State<MyApp> {
       _installedApps = iOSApps;
 
       print(await AppAvailability.checkAvailability("calshow://"));
-      // Return: Map<String, String>{app_name: , package_name: calshow://, versionCode: , version_name: }
+      // Returns: Map<String, String>{app_name: , package_name: calshow://, versionCode: , version_name: }
 
     }
 
