@@ -85,13 +85,14 @@ class AppAvailability {
     return await _channel.invokeMethod("isAppEnabled", args);
   }
 
-  /// Launch an app with the given [uri] scheme if it exists.
+  /// Launch an app with the given [uri] scheme if it exists or if [activity] name is provided [android only].
   ///
   /// If the app app isn't found, then a [PlatformException] is thrown.
-  static Future<void> launchApp(String uri) async {
+  static Future<void> launchApp(String uri, String activity) async {
     Map<String, dynamic> args = <String, dynamic>{};
     args.putIfAbsent('uri', () => uri);
     if (Platform.isAndroid) {
+      args.putIfAbsent('activity', () => activity);
       await _channel.invokeMethod("launchApp", args);
     }
     else if (Platform.isIOS) {

@@ -19,7 +19,7 @@ First, add `flutter_appavailability` as a [dependency in your pubspec.yaml file]
 - `checkAvailability(String uri)`
 - `getInstalledApps()` (only for **Android**)
 - `isAppEnabled(String uri)` (only for **Android**)
-- `launchApp(String uri)`
+- `launchApp(String uri, String activity)`
 
 See the [docs](https://pub.dartlang.org/documentation/flutter_appavailability/latest/).
 
@@ -129,6 +129,13 @@ class _MyAppState extends State<MyApp> {
     );
   }
 }
+
+```
+
+Example starting specific activity on Android. (this is useful if you want to start a specific activity of the app or the app doesn't have a launch intent and is not visible in a launcher)
+```dart
+
+AppAvailability.launchApp('com.example.helloworld', 'com.example.helloworld.settings.main.SettingsActivity');
 
 ```
 

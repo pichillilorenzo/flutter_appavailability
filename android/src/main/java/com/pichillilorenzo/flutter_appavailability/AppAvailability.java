@@ -14,6 +14,7 @@ import java.util.Map;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageInfo;
 import android.content.pm.ApplicationInfo;
@@ -40,6 +41,7 @@ public class AppAvailability implements MethodCallHandler {
   @Override
   public void onMethodCall(MethodCall call, Result result) {
     String uriSchema;
+    String activityName;
     switch (call.method) {
       case "checkAvailability":
         uriSchema = call.argument("uri").toString();
@@ -54,7 +56,8 @@ public class AppAvailability implements MethodCallHandler {
         break;
       case "launchApp":
         uriSchema = call.argument("uri").toString();
-        this.launchApp(uriSchema , result);
+        activityName = call.argument("activity").toString();
+        this.launchApp(uriSchema, activityName, result);
         break;
       default:
         result.notImplemented();
@@ -127,19 +130,54 @@ public class AppAvailability implements MethodCallHandler {
   }
 
   @TargetApi(Build.VERSION_CODES.CUPCAKE)
-  private void launchApp(String packageName, Result result) {
-    PackageInfo info = getAppPackageInfo(packageName);
+  private void launchApp(String packageName, String activityName, Result result) {
 
-    if(info != null) {
-      Intent launchIntent = registrar.context().getPackageManager().getLaunchIntentForPackage(packageName);
-      if (launchIntent != null) {
-        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        registrar.context().startActivity(launchIntent);
+    //Start specific activity of the app
+    if(activityName != null){
+      try {
+        launchActivity(packageName, activityName);
         result.success(null);
-        return;
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    } else {
+      PackageInfo info = getAppPackageInfo(packageName);
+
+      if(info != null) {
+        Intent launchIntent = registrar.context().getPackageManager().getLaunchIntentForPackage(packageName);
+        if (launchIntent != null) {
+          launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+          registrar.context().startActivity(launchIntent);
+          result.success(null);
+          return;
+        }
+
+        //this will try to launch any available activity for the app if getLaunchIntentForPackage returns null, useful for launching apps without Launcher intent
+        if(info.activities != null){
+          for (ActivityInfo activityInfo:
+                  info.activities) {
+            try {
+              launchActivity(packageName, activityInfo.name);
+              result.success(null);
+              break;
+            } catch (Exception e) {
+              e.printStackTrace();
+            }
+          }
+          return;
+        }
       }
     }
 
     result.error("", "App not found " + packageName, null);
+  }
+
+  @TargetApi(Build.VERSION_CODES.CUPCAKE)
+  private void launchActivity(String packageName, String activityName) {
+    Intent launchIntent = new Intent(Intent.ACTION_MAIN);
+    launchIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+    launchIntent.setClassName(packageName, activityName);
+    launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    registrar.context().startActivity(launchIntent);
   }
 }
