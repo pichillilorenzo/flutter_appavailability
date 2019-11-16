@@ -57,7 +57,8 @@ class AppAvailability {
   static Future<List<Map<String, dynamic>>> getInstalledApps(
     { 
       bool addSystemApps: false,
-      bool onlyAppsWithLaunchIntent: false
+      bool onlyAppsWithLaunchIntent: false,
+      int sorted: 0
     }
   ) async {
     List<dynamic> apps = await _channel.invokeMethod("getInstalledApps", {
@@ -78,6 +79,10 @@ class AppAvailability {
             "app_icon": app["app_icon"]
           });
         }
+      }
+
+      if (sorted != 0) {
+        list.sort((a, b) => sorted > 0 ? a["app_name"].compareTo(b["app_name"]) : b["app_name"].compareTo(a["app_name"]));
       }
 
       return list;
