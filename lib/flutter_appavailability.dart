@@ -31,7 +31,10 @@ class AppAvailability {
         "app_name": app["app_name"],
         "package_name": app["package_name"],
         "versionCode": app["versionCode"],
-        "version_name": app["version_name"]
+        "version_name": app["version_name"],
+        "data_dir": app["data_dir"],
+        "system_app": app["system_app"],
+        "app_icon": app["app_icon"]
       };
     }
     else if (Platform.isIOS) {
