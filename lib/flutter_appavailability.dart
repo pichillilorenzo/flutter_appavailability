@@ -34,6 +34,7 @@ class AppAvailability {
         "version_name": app["version_name"],
         "data_dir": app["data_dir"],
         "system_app": app["system_app"],
+        "launch_intent": app["launch_intent"],
         "app_icon": app["app_icon"]
       };
     }
@@ -58,7 +59,7 @@ class AppAvailability {
   /// Get the list of all installed apps, where
   /// each app has a form like [checkAvailability()].
   static Future<List<Map<String, dynamic>>> getInstalledApps(
-    { 
+    {
       bool addSystemApps: false,
       bool onlyAppsWithLaunchIntent: false,
       int sorted: 0
@@ -79,6 +80,7 @@ class AppAvailability {
             "version_name": app["version_name"],
             "data_dir": app["data_dir"],
             "system_app": app["system_app"],
+            "launch_intent": app["launch_intent"],
             "app_icon": app["app_icon"]
           });
         }

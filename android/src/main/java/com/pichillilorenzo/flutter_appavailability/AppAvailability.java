@@ -122,6 +122,7 @@ public class AppAvailability implements MethodCallHandler {
     map.put("version_name", info.versionName);
     map.put("data_dir", info.applicationInfo.dataDir);
     map.put("system_app", isSystemApp(info));
+    map.put("launch_intent", packageManager.getLaunchIntentForPackage(info.packageName) != null);
     try {
       Drawable icon = packageManager.getApplicationIcon(info.packageName);
       String encodedImage = encodeToBase64(getBitmapFromDrawable(icon), Bitmap.CompressFormat.PNG, 100);
