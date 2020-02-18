@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -21,9 +22,11 @@ import android.content.pm.ApplicationInfo;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
-import android.util.Base64;
+import android.os.AsyncTask;
 import android.os.Build;
-import android.annotation.TargetApi;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Base64;
 
 /** AppAvailability */
 public class AppAvailability implements MethodCallHandler {
@@ -44,8 +47,55 @@ public class AppAvailability implements MethodCallHandler {
     channel.setMethodCallHandler(new AppAvailability(registrar, registrar.activity()));
   }
 
+  // MethodChannel.Result wrapper that responds on the platform thread.
+  private static class MethodResultWrapper implements Result {
+    private Result methodResult;
+    private Handler handler;
+
+    MethodResultWrapper(Result result) {
+      methodResult = result;
+      handler = new Handler(Looper.getMainLooper());
+    }
+
+    @Override
+    public void success(final Object result) {
+      handler.post(
+          new Runnable() {
+            @Override
+            public void run() {
+              methodResult.success(result);
+            }
+          });
+    }
+
+    @Override
+    public void error(
+        final String errorCode, final String errorMessage, final Object errorDetails) {
+      handler.post(
+          new Runnable() {
+            @Override
+            public void run() {
+              methodResult.error(errorCode, errorMessage, errorDetails);
+            }
+          });
+    }
+
+    @Override
+    public void notImplemented() {
+      handler.post(
+          new Runnable() {
+            @Override
+            public void run() {
+              methodResult.notImplemented();
+            }
+          });
+    }
+  }
+
   @Override
-  public void onMethodCall(MethodCall call, Result result) {
+  public void onMethodCall(MethodCall call, Result rawResult) {
+    Result result = new MethodResultWrapper(rawResult);
+
     String uriSchema;
     switch (call.method) {
       case "checkAvailability":
@@ -55,7 +105,7 @@ public class AppAvailability implements MethodCallHandler {
       case "getInstalledApps":
         boolean systemApps = call.hasArgument("system_apps") && (Boolean) (call.argument("system_apps"));
         boolean onlyAppsWithLaunchIntent = call.hasArgument("only_with_launch_intent") && (Boolean) (call.argument("only_with_launch_intent"));
-        result.success(getInstalledApps(systemApps, onlyAppsWithLaunchIntent));
+        getInstalledApps(systemApps, onlyAppsWithLaunchIntent, result);
         break;
       case "isAppEnabled":
         uriSchema = call.argument("uri").toString();
@@ -80,23 +130,38 @@ public class AppAvailability implements MethodCallHandler {
     result.error("", "App not found " + uri, null);
   }
 
-  private List<Map<String, Object>> getInstalledApps(boolean includeSystemApps, boolean onlyAppsWithLaunchIntent) {
-    PackageManager packageManager = registrar.context().getPackageManager();
-    List<PackageInfo> apps = packageManager.getInstalledPackages(0);
-    List<Map<String, Object>> installedApps = new ArrayList<>(apps.size());
+  private void getInstalledApps(final boolean includeSystemApps, final boolean onlyAppsWithLaunchIntent, final Result result) {
+    final AppAvailability plugin = this;
+    new AsyncTask<Void, Void, Void>()
+    {
+      @Override
+      protected Void doInBackground(Void... params)
+      {
+        PackageManager packageManager = registrar.context().getPackageManager();
+        List<PackageInfo> apps = packageManager.getInstalledPackages(0);
+        List<Map<String, Object>> installedApps = new ArrayList<>(apps.size());
 
-    for (PackageInfo pInfo : apps) {
-      if (!includeSystemApps && isSystemApp(pInfo)) {
-        continue;
-      }
-      if (onlyAppsWithLaunchIntent && packageManager.getLaunchIntentForPackage(pInfo.packageName) == null) {
-          continue;
-      }
-      Map<String, Object> map = this.convertPackageInfoToJson(pInfo);
-      installedApps.add(map);
-    }
+        for (PackageInfo pInfo : apps) {
+          if (!includeSystemApps && isSystemApp(pInfo)) {
+            continue;
+          }
+          if (onlyAppsWithLaunchIntent && packageManager.getLaunchIntentForPackage(pInfo.packageName) == null) {
+              continue;
+          }
+          Map<String, Object> map = plugin.convertPackageInfoToJson(pInfo);
+          installedApps.add(map);
+        }
 
-    return installedApps;
+        result.success(installedApps);
+        return null;
+      }
+
+      @Override
+      protected void onPostExecute(Void result)
+      {
+        super.onPostExecute(result);
+      }
+    }.execute();
   }
 
   private PackageInfo getAppPackageInfo(String uri) {
