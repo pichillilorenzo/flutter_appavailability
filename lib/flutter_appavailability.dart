@@ -21,7 +21,7 @@ class AppAvailability {
   ///   "versionCode": "",
   ///   "version_name": ""
   /// }
-  static Future<Map<String, String>> checkAvailability(String uri) async {
+  static Future<Map<String, dynamic>> checkAvailability(String uri) async {
     Map<String, dynamic> args = <String, dynamic>{};
     args.putIfAbsent('uri', () => uri);
 
@@ -31,7 +31,11 @@ class AppAvailability {
         "app_name": app["app_name"],
         "package_name": app["package_name"],
         "versionCode": app["versionCode"],
-        "version_name": app["version_name"]
+        "version_name": app["version_name"],
+        "data_dir": app["data_dir"],
+        "system_app": app["system_app"],
+        "launch_intent": app["launch_intent"],
+        "app_icon": app["app_icon"]
       };
     }
     else if (Platform.isIOS) {
@@ -54,19 +58,36 @@ class AppAvailability {
   ///
   /// Get the list of all installed apps, where
   /// each app has a form like [checkAvailability()].
-  static Future<List<Map<String, String>>> getInstalledApps() async {
-    List<dynamic> apps = await _channel.invokeMethod("getInstalledApps");
+  static Future<List<Map<String, dynamic>>> getInstalledApps(
+    {
+      bool addSystemApps: false,
+      bool onlyAppsWithLaunchIntent: false,
+      int sorted: 0
+    }
+  ) async {
+    List<dynamic> apps = await _channel.invokeMethod("getInstalledApps", {
+      'system_apps': addSystemApps,
+      'only_with_launch_intent': onlyAppsWithLaunchIntent
+    });
     if (apps != null && apps is List) {
-      List<Map<String, String>> list = new List();
+      List<Map<String, dynamic>> list = new List();
       for (var app in apps) {
         if (app is Map) {
           list.add({
             "app_name": app["app_name"],
             "package_name": app["package_name"],
-            "versionCode": app["versionCode"],
-            "version_name": app["version_name"]
+            "version_code": app["version_code"],
+            "version_name": app["version_name"],
+            "data_dir": app["data_dir"],
+            "system_app": app["system_app"],
+            "launch_intent": app["launch_intent"],
+            "app_icon": app["app_icon"]
           });
         }
+      }
+
+      if (sorted != 0) {
+        list.sort((a, b) => sorted > 0 ? a["app_name"].compareTo(b["app_name"]) : b["app_name"].compareTo(a["app_name"]));
       }
 
       return list;

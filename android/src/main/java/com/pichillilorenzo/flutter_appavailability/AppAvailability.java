@@ -6,25 +6,35 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageInfo;
 import android.content.pm.ApplicationInfo;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
+import android.os.AsyncTask;
 import android.os.Build;
-import android.annotation.TargetApi;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Base64;
 
 /** AppAvailability */
 public class AppAvailability implements MethodCallHandler {
 
   private final Activity activity;
   private final Registrar registrar;
+
+  private final int SYSTEM_APP_MASK = ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP;
 
   public AppAvailability(Registrar registrar, Activity activity) {
     this.registrar = registrar;
@@ -37,8 +47,55 @@ public class AppAvailability implements MethodCallHandler {
     channel.setMethodCallHandler(new AppAvailability(registrar, registrar.activity()));
   }
 
+  // MethodChannel.Result wrapper that responds on the platform thread.
+  private static class MethodResultWrapper implements Result {
+    private Result methodResult;
+    private Handler handler;
+
+    MethodResultWrapper(Result result) {
+      methodResult = result;
+      handler = new Handler(Looper.getMainLooper());
+    }
+
+    @Override
+    public void success(final Object result) {
+      handler.post(
+          new Runnable() {
+            @Override
+            public void run() {
+              methodResult.success(result);
+            }
+          });
+    }
+
+    @Override
+    public void error(
+        final String errorCode, final String errorMessage, final Object errorDetails) {
+      handler.post(
+          new Runnable() {
+            @Override
+            public void run() {
+              methodResult.error(errorCode, errorMessage, errorDetails);
+            }
+          });
+    }
+
+    @Override
+    public void notImplemented() {
+      handler.post(
+          new Runnable() {
+            @Override
+            public void run() {
+              methodResult.notImplemented();
+            }
+          });
+    }
+  }
+
   @Override
-  public void onMethodCall(MethodCall call, Result result) {
+  public void onMethodCall(MethodCall call, Result rawResult) {
+    Result result = new MethodResultWrapper(rawResult);
+
     String uriSchema;
     switch (call.method) {
       case "checkAvailability":
@@ -46,7 +103,9 @@ public class AppAvailability implements MethodCallHandler {
         this.checkAvailability( uriSchema, result );
         break;
       case "getInstalledApps":
-        result.success(getInstalledApps());
+        boolean systemApps = call.hasArgument("system_apps") && (Boolean) (call.argument("system_apps"));
+        boolean onlyAppsWithLaunchIntent = call.hasArgument("only_with_launch_intent") && (Boolean) (call.argument("only_with_launch_intent"));
+        getInstalledApps(systemApps, onlyAppsWithLaunchIntent, result);
         break;
       case "isAppEnabled":
         uriSchema = call.argument("uri").toString();
@@ -71,22 +130,38 @@ public class AppAvailability implements MethodCallHandler {
     result.error("", "App not found " + uri, null);
   }
 
-  private List<Map<String, Object>> getInstalledApps() {
-    PackageManager packageManager = registrar.context().getPackageManager();
-    List<PackageInfo> apps = packageManager.getInstalledPackages(0);
-    List<Map<String, Object>> installedApps = new ArrayList<>(apps.size());
-    int systemAppMask = ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP;
+  private void getInstalledApps(final boolean includeSystemApps, final boolean onlyAppsWithLaunchIntent, final Result result) {
+    final AppAvailability plugin = this;
+    new AsyncTask<Void, Void, Void>()
+    {
+      @Override
+      protected Void doInBackground(Void... params)
+      {
+        PackageManager packageManager = registrar.context().getPackageManager();
+        List<PackageInfo> apps = packageManager.getInstalledPackages(0);
+        List<Map<String, Object>> installedApps = new ArrayList<>(apps.size());
 
-    for (PackageInfo pInfo : apps) {
-      if ((pInfo.applicationInfo.flags & systemAppMask) != 0) {
-        continue;
+        for (PackageInfo pInfo : apps) {
+          if (!includeSystemApps && isSystemApp(pInfo)) {
+            continue;
+          }
+          if (onlyAppsWithLaunchIntent && packageManager.getLaunchIntentForPackage(pInfo.packageName) == null) {
+              continue;
+          }
+          Map<String, Object> map = plugin.convertPackageInfoToJson(pInfo);
+          installedApps.add(map);
+        }
+
+        result.success(installedApps);
+        return null;
       }
 
-      Map<String, Object> map = this.convertPackageInfoToJson(pInfo);
-      installedApps.add(map);
-    }
-
-    return installedApps;
+      @Override
+      protected void onPostExecute(Void result)
+      {
+        super.onPostExecute(result);
+      }
+    }.execute();
   }
 
   private PackageInfo getAppPackageInfo(String uri) {
@@ -104,12 +179,40 @@ public class AppAvailability implements MethodCallHandler {
   }
 
   private Map<String, Object> convertPackageInfoToJson(PackageInfo info) {
+    PackageManager packageManager = registrar.context().getPackageManager();
     Map<String, Object> map = new HashMap<>();
-    map.put("app_name", info.applicationInfo.loadLabel(registrar.context().getPackageManager()).toString());
+    map.put("app_name", info.applicationInfo.loadLabel(packageManager).toString());
     map.put("package_name", info.packageName);
     map.put("version_code", String.valueOf(info.versionCode));
     map.put("version_name", info.versionName);
+    map.put("data_dir", info.applicationInfo.dataDir);
+    map.put("system_app", isSystemApp(info));
+    map.put("launch_intent", packageManager.getLaunchIntentForPackage(info.packageName) != null);
+    try {
+      Drawable icon = packageManager.getApplicationIcon(info.packageName);
+      String encodedImage = encodeToBase64(getBitmapFromDrawable(icon), Bitmap.CompressFormat.PNG, 100);
+      map.put("app_icon", encodedImage);
+    } catch (PackageManager.NameNotFoundException ignored) {
+    }
     return map;
+  }
+
+  private boolean isSystemApp(PackageInfo pInfo) {
+      return (pInfo.applicationInfo.flags & SYSTEM_APP_MASK) != 0;
+  }
+
+  private String encodeToBase64(Bitmap image, Bitmap.CompressFormat compressFormat, int quality) {
+      ByteArrayOutputStream byteArrayOS = new ByteArrayOutputStream();
+      image.compress(compressFormat, quality, byteArrayOS);
+      return Base64.encodeToString(byteArrayOS.toByteArray(), Base64.NO_WRAP);
+  }
+
+  private Bitmap getBitmapFromDrawable(Drawable drawable) {
+      final Bitmap bmp = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+      final Canvas canvas = new Canvas(bmp);
+      drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+      drawable.draw(canvas);
+      return bmp;
   }
 
   private void isAppEnabled(String packageName, Result result) {
