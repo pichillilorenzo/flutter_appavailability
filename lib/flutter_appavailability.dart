@@ -21,21 +21,22 @@ class AppAvailability {
   ///   "versionCode": "",
   ///   "version_name": ""
   /// }
-  static Future<Map<String, String>> checkAvailability(String uri) async {
+  static Future<Map<String, String?>?> checkAvailability(String uri) async {
     Map<String, dynamic> args = <String, dynamic>{};
     args.putIfAbsent('uri', () => uri);
 
     if (Platform.isAndroid) {
-      Map<dynamic, dynamic> app = await _channel.invokeMethod("checkAvailability", args);
+      Map<dynamic, dynamic> app = await (_channel.invokeMethod(
+          "checkAvailability", args) as FutureOr<Map<dynamic, dynamic>>);
       return {
         "app_name": app["app_name"],
         "package_name": app["package_name"],
         "versionCode": app["versionCode"],
         "version_name": app["version_name"]
       };
-    }
-    else if (Platform.isIOS) {
-      bool appAvailable = await _channel.invokeMethod("checkAvailability", args);
+    } else if (Platform.isIOS) {
+      bool appAvailable = await (_channel.invokeMethod(
+          "checkAvailability", args) as FutureOr<bool>);
       if (!appAvailable) {
         throw PlatformException(code: "", message: "App not found $uri");
       }
@@ -54,10 +55,10 @@ class AppAvailability {
   ///
   /// Get the list of all installed apps, where
   /// each app has a form like [checkAvailability()].
-  static Future<List<Map<String, String>>> getInstalledApps() async {
-    List<dynamic> apps = await _channel.invokeMethod("getInstalledApps");
+  static Future<List<Map<String, String?>?>> getInstalledApps() async {
+    List<dynamic>? apps = await _channel.invokeMethod("getInstalledApps");
     if (apps != null && apps is List) {
-      List<Map<String, String>> list = new List();
+      List<Map<String, String?>> list = [];
       for (var app in apps) {
         if (app is Map) {
           list.add({
@@ -71,7 +72,7 @@ class AppAvailability {
 
       return list;
     }
-    return new List(0);
+    return [];
   }
 
   /// Only for **Android**.
@@ -79,7 +80,7 @@ class AppAvailability {
   /// Check if the app is enabled or not with the given [uri] scheme.
   ///
   /// If the app isn't found, then a [PlatformException] is thrown.
-  static Future<bool> isAppEnabled(String uri) async {
+  static Future<bool?> isAppEnabled(String uri) async {
     Map<String, dynamic> args = <String, dynamic>{};
     args.putIfAbsent('uri', () => uri);
     return await _channel.invokeMethod("isAppEnabled", args);
@@ -93,14 +94,12 @@ class AppAvailability {
     args.putIfAbsent('uri', () => uri);
     if (Platform.isAndroid) {
       await _channel.invokeMethod("launchApp", args);
-    }
-    else if (Platform.isIOS) {
-      bool appAvailable = await _channel.invokeMethod("launchApp", args);
+    } else if (Platform.isIOS) {
+      bool appAvailable =
+          await (_channel.invokeMethod("launchApp", args) as FutureOr<bool>);
       if (!appAvailable) {
         throw PlatformException(code: "", message: "App not found $uri");
       }
     }
-
   }
-
 }
