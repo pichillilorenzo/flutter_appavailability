@@ -4,19 +4,19 @@ PODS:
     - Flutter
 
 DEPENDENCIES:
-  - Flutter (from `.symlinks/flutter/ios`)
+  - Flutter (from `Flutter`)
   - flutter_appavailability (from `.symlinks/plugins/flutter_appavailability/ios`)
 
 EXTERNAL SOURCES:
   Flutter:
-    :path: ".symlinks/flutter/ios"
+    :path: Flutter
   flutter_appavailability:
     :path: ".symlinks/plugins/flutter_appavailability/ios"
 
 SPEC CHECKSUMS:
-  Flutter: 9d0fac939486c9aba2809b7982dfdbb47a7b0296
-  flutter_appavailability: 9e624a39b1522f3254b7ac694a11994bef8b1776
+  Flutter: 434fef37c0980e73bb6479ef766c45957d4b510c
+  flutter_appavailability: ebf8f85abea44436d1262fcde8a4e64b2534b01a
 
-PODFILE CHECKSUM: 7765ea4305eaab0b3dfd384c7de11902aa3195fd
+PODFILE CHECKSUM: aafe91acc616949ddb318b77800a7f51bffa2a4c
 
-COCOAPODS: 1.5.3
+COCOAPODS: 1.10.1

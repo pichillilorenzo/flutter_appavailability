@@ -35,8 +35,8 @@ class AppAvailability {
         "version_name": app["version_name"]
       };
     } else if (Platform.isIOS) {
-      bool appAvailable = await (_channel.invokeMethod(
-          "checkAvailability", args) as FutureOr<bool>);
+      bool appAvailable =
+          await (_channel.invokeMethod("checkAvailability", args));
       if (!appAvailable) {
         throw PlatformException(code: "", message: "App not found $uri");
       }
