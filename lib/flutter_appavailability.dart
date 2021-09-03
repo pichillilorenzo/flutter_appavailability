@@ -26,8 +26,8 @@ class AppAvailability {
     args.putIfAbsent('uri', () => uri);
 
     if (Platform.isAndroid) {
-      Map<dynamic, dynamic> app = await (_channel.invokeMethod(
-          "checkAvailability", args) as FutureOr<Map<dynamic, dynamic>>);
+      final result = await _channel.invokeMethod("checkAvailability", args);
+      Map<dynamic, dynamic> app = result as Map<dynamic, dynamic>;
       return {
         "app_name": app["app_name"],
         "package_name": app["package_name"],
