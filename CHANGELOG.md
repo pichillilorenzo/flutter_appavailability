@@ -1,3 +1,7 @@
+## 0.0.22
+
+- Updated Android V2 embedding, support flutter 2.5.0
+
 ## 0.0.21
 
 - Updated README.md

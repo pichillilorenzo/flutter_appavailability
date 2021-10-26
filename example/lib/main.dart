@@ -12,23 +12,12 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-
   List<Map<String, String>> installedApps;
   List<Map<String, String>> iOSApps = [
-    {
-      "app_name": "Calendar",
-      "package_name": "calshow://"
-    },
-    {
-      "app_name": "Facebook",
-      "package_name": "fb://"
-    },
-    {
-      "app_name": "Whatsapp",
-      "package_name": "whatsapp://"
-    }
+    {"app_name": "Calendar", "package_name": "calshow://"},
+    {"app_name": "Facebook", "package_name": "fb://"},
+    {"app_name": "Whatsapp", "package_name": "whatsapp://"}
   ];
-
 
   @override
   void initState() {
@@ -40,17 +29,18 @@ class _MyAppState extends State<MyApp> {
     List<Map<String, String>> _installedApps;
 
     if (Platform.isAndroid) {
-
       _installedApps = await AppAvailability.getInstalledApps();
+      try {
+        print(await AppAvailability.checkAvailability("com.android.chrome"));
+      } catch (e) {
+        print('AppAvailability.checkAvailability error: $e');
+      }
 
-      print(await AppAvailability.checkAvailability("com.android.chrome"));
       // Returns: Map<String, String>{app_name: Chrome, package_name: com.android.chrome, versionCode: null, version_name: 55.0.2883.91}
 
-      print(await AppAvailability.isAppEnabled("com.android.chrome"));
       // Returns: true
 
-    }
-    else if (Platform.isIOS) {
+    } else if (Platform.isIOS) {
       // iOS doesn't allow to get installed apps.
       _installedApps = iOSApps;
 
@@ -62,13 +52,11 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       installedApps = _installedApps;
     });
-
   }
 
   @override
   Widget build(BuildContext context) {
-    if (installedApps == null)
-      getApps();
+    if (installedApps == null) getApps();
 
     return MaterialApp(
       home: Scaffold(
@@ -81,19 +69,21 @@ class _MyAppState extends State<MyApp> {
             return ListTile(
               title: Text(installedApps[index]["app_name"]),
               trailing: IconButton(
-                icon: const Icon(Icons.open_in_new),
-                onPressed: () {
-                  Scaffold.of(context).hideCurrentSnackBar();
-                  AppAvailability.launchApp(installedApps[index]["package_name"]).then((_) {
-                    print("App ${installedApps[index]["app_name"]} launched!");
-                  }).catchError((err) {
-                    Scaffold.of(context).showSnackBar(SnackBar(
-                        content: Text("App ${installedApps[index]["app_name"]} not found!")
-                    ));
-                    print(err);
-                  });
-                }
-              ),
+                  icon: const Icon(Icons.open_in_new),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    AppAvailability.launchApp(
+                            installedApps[index]["package_name"])
+                        .then((_) {
+                      print(
+                          "App ${installedApps[index]["app_name"]} launched!");
+                    }).catchError((err) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text(
+                              "App ${installedApps[index]["app_name"]} not found!")));
+                      print(err);
+                    });
+                  }),
             );
           },
         ),
