@@ -81,18 +81,18 @@ class _MyAppState extends State<MyApp> {
             return ListTile(
               title: Text(installedApps[index]["app_name"]),
               trailing: IconButton(
-                icon: const Icon(Icons.open_in_new),
-                onPressed: () {
-                  Scaffold.of(context).hideCurrentSnackBar();
-                  AppAvailability.launchApp(installedApps[index]["package_name"]).then((_) {
-                    print("App ${installedApps[index]["app_name"]} launched!");
-                  }).catchError((err) {
-                    Scaffold.of(context).showSnackBar(SnackBar(
-                        content: Text("App ${installedApps[index]["app_name"]} not found!")
-                    ));
-                    print(err);
-                  });
-                }
+                  icon: const Icon(Icons.open_in_new),
+                  onPressed: () {
+                    Scaffold.of(context).hideCurrentSnackBar();
+                    AppAvailability.launchApp(installedApps[index]["package_name"]).then((_) {
+                      print("App ${installedApps[index]["app_name"]} launched!");
+                    }).catchError((err) {
+                      Scaffold.of(context).showSnackBar(SnackBar(
+                          content: Text("App ${installedApps[index]["app_name"]} not found!")
+                      ));
+                      print(err);
+                    });
+                  }
               ),
             );
           },

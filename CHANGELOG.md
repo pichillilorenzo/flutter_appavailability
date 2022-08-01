@@ -1,3 +1,11 @@
+## 0.0.23
+
+- Adding support for flutter 3.0.5
+
+## 0.0.21
+
+- Migrating to null-safety
+
 ## 0.0.21
 
 - Updated README.md
